@@ -1,37 +1,28 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_application_1/page/Loging_page.dart';
-// import 'package:flutter_application_1/page/Register_page.dart';
 
-// class auth_pagge extends StatefulWidget {
-//  const auth_pagge({Key? key}) : super(key: key);
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_application_1/wigets/dailo.dart';
 
-//   @override
-//   State<auth_pagge> createState() => _auth_paggeState();
-// }
+class AuthenticationService {
+  FirebaseAuth auth = FirebaseAuth.instance;
 
-// class _auth_paggeState extends State<auth_pagge> {
-//   // intially,show the loging page
-//   bool isLoging =true;
+  Future<bool?> login(String email, String password) async {
+    try {
+      final credential = await auth.signInWithEmailAndPassword(
+          email: email, password: password);
+      if (credential.user != null) {
+        return true;
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        DailogWidget.showDailog("No user found for that email.");
+      } else if (e.code == 'wrong-password') {
+        DailogWidget.showDailog("Wrong password provided for that user.");
+      }
+    }
+    return false;
+  }
 
-//   // void toggleScreen(){
-//   //   setState(() {
-//   //     showLogingpage = !showLogingpage;
-//   //   });
-//   // }
-//   @override
-//   Widget build(BuildContext context) => 
-//   // loingpage = LoginWidgets
-//   isLoging ? LoginPage(onClickedSignUp: toggle )
-//   : 
-//   // Registerpage = SignUpWidgets
-//   Registerpage(onClickedSignIn: toggle);
-// void toggle() => setState(()=> isLoging = !isLoging);
-
-  
-//     // if(showLogingpage){
-//     //   return LoginPage(showRegisterpage: toggleScreen);
-//     // }else{
-//     //   return Registerpage();
-//     // }
-  
-// }
+  Future logout() async {
+    auth.signOut();
+  }
+}

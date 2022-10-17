@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/service/people_model.dart';
 import 'package:flutter_application_1/service/people_service.dart';
@@ -7,20 +8,21 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 
-class CreatePeopleScreen extends StatefulWidget {
-  const CreatePeopleScreen({Key? key}) : super(key: key);
+class DetailPeoplePage extends StatefulWidget {
+  const DetailPeoplePage({Key? key, required this.people}) : super(key: key);
+  final PeopleModel people;
 
   @override
-  State<CreatePeopleScreen> createState() => _CreatePeopleScreenState();
+  State<DetailPeoplePage> createState() => _DetailPeoplePageState();
 }
 
-class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
-  final name = TextEditingController();
-  final gender = TextEditingController();
-  final email = TextEditingController();
+class _DetailPeoplePageState extends State<DetailPeoplePage> {
   XFile? imageFile;
+  final ImagePicker _picker = ImagePicker();
+  late TextEditingController name;
+  late TextEditingController gender;
+  late TextEditingController email;
 
-  final ImagePicker _picker= ImagePicker();
   Future<void> _onImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -29,15 +31,11 @@ class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
         maxHeight: double.infinity,
         imageQuality: 100,
       );
-      setState(() {
-        imageFile = pickedFile;
-      });
+      setState(() => imageFile = pickedFile);
     } catch (e) {
       debugPrint('Image Picker error => $e');
     }
   }
-
-  // create image in to data
 
   _showPicker(BuildContext context) {
     showModalBottomSheet(
@@ -51,7 +49,7 @@ class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
                 title: const Text('Camera'),
                 onTap: () {
                   _onImage(ImageSource.camera);
-                  Get.back();
+                  Navigator.of(context).pop();
                 },
               ),
               ListTile(
@@ -59,7 +57,7 @@ class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
                 title: const Text('Photo Library'),
                 onTap: () {
                   _onImage(ImageSource.gallery);
-                  Get.back();
+                  Navigator.of(context).pop();
                 },
               ),
             ],
@@ -70,17 +68,57 @@ class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    name = TextEditingController(text: widget.people.name);
+    gender = TextEditingController(text: widget.people.gender);
+    email = TextEditingController(text: widget.people.email);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create People'),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              DailogWidget.showLoading(context);
+              await Future.delayed(const Duration(seconds: 2));
+              if (imageFile == null) {
+                var peopleModel = PeopleModel(
+                  id: widget.people.id,
+                  name: name.text,
+                  gender: gender.text,
+                  email: email.text,
+                  photo: widget.people.photo,
+                );
+                await PeopleService().updatePeople(peopleModel);
+              } else {
+                String? photoUrl = await PeopleService()
+                    .uploadAndDownloadPhoto(File(imageFile!.path));
+                var peopleModel = PeopleModel(
+                  id: widget.people.id,
+                  name: name.text,
+                  gender: gender.text,
+                  email: email.text,
+                  photo: photoUrl,
+                );
+                await PeopleService().updatePeople(peopleModel);
+              }
+              Get.back();
+              Get.back();
+            },
+            icon: const Icon(Icons.done),
+          ),
+          const SizedBox(width: 15.0),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(26.0),
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // profile
               InkWell(
                 onTap: () {
                   _showPicker(context);
@@ -96,14 +134,14 @@ class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
                       fit: BoxFit.cover,
                       image: imageFile != null
                           ? Image.file(File(imageFile!.path)).image
-                          : const NetworkImage(
-                              'https://3znvnpy5ek52a26m01me9p1t-wpengine.netdna-ssl.com/wp-content/uploads/2017/07/noimage_person.png',
+                          : NetworkImage(
+                              widget.people.photo ??
+                                  'https://3znvnpy5ek52a26m01me9p1t-wpengine.netdna-ssl.com/wp-content/uploads/2017/07/noimage_person.png',
                             ),
                     ),
                   ),
                 ),
               ),
-              // data name gmail and other
               const SizedBox(height: 26.0),
               TextField(
                 controller: name,
@@ -127,23 +165,12 @@ class _CreatePeopleScreenState extends State<CreatePeopleScreen> {
               ),
               const SizedBox(height: 26.0),
               ElevatedButton.icon(
-                onPressed: () async {
-                  DailogWidget.showLoading(context);
-                  await Future.delayed(const Duration(seconds: 2));
-                  String? photoUrl = await PeopleService()
-                      .uploadAndDownloadPhoto(File(imageFile!.path));
-                  PeopleModel people = PeopleModel(
-                    name: name.text,
-                    gender: gender.text,
-                    email: email.text,
-                    photo: photoUrl,
-                  );
-                  await PeopleService().createPeople(people);
-                  Get.back();
-                  Get.back();
+                onPressed: () {
+                  PeopleService().deletePeople(widget.people.id!);
+                  Navigator.pop(context);
                 },
-                icon: const Icon(Icons.add),
-                label: const Text('SAVE'),
+                icon: const Icon(Icons.delete),
+                label: const Text('Delete'),
               ),
             ],
           ),
