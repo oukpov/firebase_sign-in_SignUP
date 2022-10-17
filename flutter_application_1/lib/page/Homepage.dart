@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/service/screen/create_people.dart';
+import 'package:get/get.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key? key}) : super(key: key);
@@ -35,8 +37,14 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('Sign Out',style: TextStyle(color: Colors.white),),
-              )),
+              ),
               
+              
+              ),
+              SizedBox(height: 30,),
+              IconButton(onPressed: (){
+               Navigator.push(context, MaterialPageRoute(builder: (context) => CreatePeopleScreen(),));
+              }, icon: Icon(Icons.add,color: Colors.white,size: 60,))
             ],
           ),
         ),
